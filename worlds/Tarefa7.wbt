@@ -27,7 +27,7 @@ WorldInfo {
 }
 Viewpoint {
   orientation -0.999983813611753 -0.0005536385708356971 0.005662684772044472 1.435603679730549
-  position -0.32771274389844063 24.478044651003874 3.5978400833471964
+  position -0.7833487794975085 22.336764580013828 3.1651461814716706
 }
 TexturedBackground {
 }
@@ -39,15 +39,12 @@ RectangleArena {
 }
 DEF MY_ROBOT Youbot {
   translation -7.125 0.120027 7.125
+  rotation -0.5773509358554485 0.5773509358554485 0.5773489358556708 2.0944
   controller "my_controller"
   supervisor TRUE
 }
 WoodenBox {
-  translation -0.375 0.3 -1.125
-  size 2.25 0.6 2.25
-}
-WoodenBox {
-  translation -0.375 0.3 -1.125
+  translation -0.375 0.3 -0.375
   name "wooden box(2)"
   size 2.25 0.6 2.25
 }
