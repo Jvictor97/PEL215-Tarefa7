@@ -2,8 +2,8 @@
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.9066895311063006 0.380205739752242 0.18264087615232052 0.939949069974371
-  position 1.330622400200476 3.202467493188662 2.937172330906312
+  orientation -0.999983813611753 -0.0005536385708356971 0.005662684772044472 1.435603679730549
+  position -0.32771274389844063 24.478044651003874 3.5978400833471964
 }
 TexturedBackground {
 }
@@ -14,5 +14,44 @@ RectangleArena {
   floorTileSize 1.5 1.5
 }
 Youbot {
-  translation 0.375 0.12 0.375
+  translation -7.125 0.120027 7.125
+}
+WoodenBox {
+  translation -0.375 0.3 -1.125
+  size 2.25 0.6 2.25
+}
+WoodenBox {
+  translation -0.375 0.3 -1.125
+  name "wooden box(2)"
+  size 2.25 0.6 2.25
+}
+WoodenBox {
+  translation -0.375 0.3 -5.625
+  name "wooden box(6)"
+  size 2.25 0.6 2.25
+}
+WoodenBox {
+  translation -4.875 0.3 -3.375
+  name "wooden box(7)"
+  size 2.25 0.6 2.25
+}
+WoodenBox {
+  translation 4.875 0.3 -3.375
+  name "wooden box(4)"
+  size 2.25 0.6 2.25
+}
+WoodenBox {
+  translation 4.125 0.3 1.125
+  name "wooden box(5)"
+  size 2.25 0.6 2.25
+}
+WoodenBox {
+  translation -3.375 0.3 3.375
+  name "wooden box(3)"
+  size 2.25 0.6 2.25
+}
+WoodenBox {
+  translation 1.875 0.3 4.875
+  name "wooden box(1)"
+  size 2.25 0.6 2.25
 }
