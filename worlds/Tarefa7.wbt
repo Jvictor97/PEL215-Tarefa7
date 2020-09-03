@@ -1,5 +1,29 @@
 #VRML_SIM R2020a utf8
 WorldInfo {
+  contactProperties [
+    ContactProperties {
+      material1 "ExteriorWheelMat"
+      coulombFriction [
+        1.8, 0, 0.2
+      ]
+      frictionRotation 0.9648 0
+      bounce 0
+      forceDependentSlip [
+        10, 0
+      ]
+    }
+    ContactProperties {
+      material1 "InteriorWheelMat"
+      coulombFriction [
+        1.8, 0, 0.2
+      ]
+      frictionRotation -0.9648 0
+      bounce 0
+      forceDependentSlip [
+        10, 0
+      ]
+    }
+  ]
 }
 Viewpoint {
   orientation -0.999983813611753 -0.0005536385708356971 0.005662684772044472 1.435603679730549
@@ -13,8 +37,10 @@ RectangleArena {
   floorSize 15 15
   floorTileSize 1.5 1.5
 }
-Youbot {
+DEF MY_ROBOT Youbot {
   translation -7.125 0.120027 7.125
+  controller "my_controller"
+  supervisor TRUE
 }
 WoodenBox {
   translation -0.375 0.3 -1.125
