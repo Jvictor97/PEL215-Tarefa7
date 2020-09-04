@@ -12,39 +12,63 @@
 // Velocidade negativa aplicada em movimentos na diagonal
 #define DIAGONAL_ZERO -1.13425
 
+
+/* Structs para auxiliar no desenvolvimento */
+
+// Struct Ponto
 typedef struct {
  double x;
  double z;
 } Point;
 
+// Struct para Celula
 typedef struct {
  int row;
  int column;
 } Cell;
 
-typedef void (*Function)();
-
+// Struct para o Movimento do robo
 typedef struct {
  Cell cell;
  Function function;
+ double speed;
 } Movement;
 
+// Definindo um tipo "Function" (ponteiro para funcao)
+typedef void (*Function)();
+
+// Ponto de objetivo do robo na celula [0][19]
 Point goal = { 7.125, -7.125 };
 
-// Distância de influência dos obstáculos
+// Distancia de influencia dos obstáculos
 double Ro0 = 3.0;
 
 // Array para referenciar os motores
 WbDeviceTag motors[4];
+
+// Constante Katt
 const double katt = 1.0;
+// Constante Krep
 const double krep = 999.9;
+// Fator multiplicador da velocidade
+double cellSpeed = 0.0;
+
+// Funcao para garantir que um valor esteja no intervalo [min,max]
+double onInterval(double value, double min, double max) {
+  if (value < min) return min;
+  if (value > max) return max;
+  
+  return value;
+}
 
 /* Funcoes para configurar os motores */
 
 // Funcao para configurar a velocidade nos 4 motores
 void setSpeed(double* speeds) {
-  for (int i = 0; i < 4; i++)
-    wb_motor_set_velocity(motors[i], speeds[i]);
+  for (int i = 0; i < 4; i++) {
+    double cellSpeedFactor = onInterval(cellSpeed, 1, 6.28);
+    wb_motor_set_velocity(motors[i], speeds[i] / 6.28 * cellSpeedFactor);
+  }
 }
 
 // Move o robo na diagonal para frente e para a esquerda
@@ -105,11 +129,14 @@ bool equal(double firstValue, double secondValue) {
   return fabs(firstValue - secondValue) < tolerance;
 }
 
+// Calcula a distancia euclidiana entre dois pontos
 double euclidianDistance(Point p1, Point p2) {
   return sqrt(pow(p1.x - p2.x, 2) + pow(p1.z - p2.z, 2));
 }
 
+// Calcula o potencial de uma celula
 double potential(double row, double column) {
+  // Coordenadas dos 7 obstaculos no ambiente
   Point obstacles[7] = {
    { -4.875, -3.375 },
    { -0.375, -5.625 },
@@ -120,28 +147,42 @@ double potential(double row, double column) {
    {  1.875,  4.875 }
   };
   
+  // Convertendo linha e coluna em coordenadas
   double x = 0.75 * column - 7.125;
   double z = 0.75 * row - 7.125;
   
+  // Cria a representação da celula
   Point cellPosition = { x, z };
   
+  // Calcula a distancia da celula atual para o objetivo
   double goalDistance = euclidianDistance(cellPosition, goal);
   
+  // Calcula o potencial atrativo
   double Uatt = 0.5 * katt * pow(goalDistance, 2);
   
+  // Variavel para o potencial repulsivo
   double Urep = 0.0;
   
+  // Calcula o potencial repulsivo 
+  //(somatorio do potencial repulsivo de todos os obstaculos cujo
+  // Roq <= Ro0)
   for(int i = 0; i < 7; i++) {
+    // Calcula a distancia da celula para o obstaculo atual
     double Roq = euclidianDistance(cellPosition, obstacles[i]);
     
+    // Se a distancia atual for superior a distancia de influencia
+    // passa para o proximo obstaculo
     if (Roq > Ro0) continue;
   
+    // Caso contrario, soma o potencial de repulsao da celula
     Urep += 0.5 * krep * pow((1/Roq - 1/Ro0), 2);
   }
   
+  // Retorna o potencial com a soma de Uatt e Urep
   return Uatt + Urep;
 }
 
+// Calcula o potencial de todas as celulas da matriz
 void calculateMatrixPotentials(double matrix[][20]) {
   for(int row = 0; row < 20; row++) {
     for(int column = 0; column < 20; column++) {
@@ -150,21 +191,13 @@ void calculateMatrixPotentials(double matrix[][20]) {
   }
 }
 
-void printMatrix(double matrix[][20]){
-  for (int row = 0; row < 20; row++) {
-    for (int column = 0; column < 20; column++) { 
-      printf("%.2f ", matrix[row][column]);  
-   }
-    printf("\n");
- }
- 
-  printf("\n\n");
-}
-
+// Verifica se uma celula eh valida
 bool validCell(int row, int column) {
   return row >= 0 && row <= 19 && column >= 0 && column <= 19;
 }
 
+// Define qual funcao de movimentacao deve ser usada
+// comparando a celula atual com a proxima
 Function defineFunction(Cell currentCell, Cell nextCell) {
   if (nextCell.row < currentCell.row) {
     if (nextCell.column < currentCell.column) return frontLeft;
@@ -185,28 +218,45 @@ Function defineFunction(Cell currentCell, Cell nextCell) {
   }
 }
 
+// Funcao para o Gradiente Descendente, define o proximo movimento do robo
 Movement gradientDescent(Cell currentCell, double matrix[20][20]) {
-  double minimumPotential = matrix[currentCell.row][currentCell.column];
+  // Potencial da celula atual
+  double currentCellPotential = matrix[currentCell.row][currentCell.column];
+  // Potencial minimo
+  double minimumPotential = currentCellPotential;
+  // Velocidade do movimento
+  double speed = 0.0;
+  // Proxima celula
   Cell nextCell = currentCell;
+  // Struct movimento
   Movement movement;
 
+  // Examina o melhor movimento dentre todos os disponiveis
   for (int row = currentCell.row - 1; row <= currentCell.row + 1; row++) {
     for (int column = currentCell.column - 1; column <= currentCell.column + 1; column++) {
       if (!validCell(row, column)) continue;
       double cellPotential = matrix[row][column];
       
+      // Caso potencial da celula avaliada seja menor que o menor potencial
       if (cellPotential < minimumPotential) {
+        // Atualiza a velocidade do movimento
+        speed = currentCellPotential - cellPotential;
+        // Atualiza o menor potencial
         minimumPotential = cellPotential;
+        // Define a proxima celula como a celula avaliada
         nextCell = (Cell) { row, column };
       }
     }
   }
   
+  // Associa as informacoes do movimento e o retorna
+  movement.speed = speed;
   movement.cell = nextCell;
   movement.function = defineFunction(currentCell, nextCell);
   return movement;
 }
 
+// Converte um indice (de linha ou coluna) em coordenadas
 double toCoordinate(int index) {
   return 0.75 * index - 7.125;
 }
@@ -234,17 +284,18 @@ int main(int argc, char **argv) {
   // Capturando a informacao de translacao do robo
   WbFieldRef trans_field = wb_supervisor_node_get_field(robot_node, "translation");
   
+  // Matriz para representar o ambiente  
   double matrix[20][20];
+  // Chamada para calcular os potenciais das celulas
   calculateMatrixPotentials(matrix);
-  printMatrix(matrix);
-  
+    
+  // Celula atual
   Cell currentCell = { 19, 0 };
 
+  // Define o primeiro movimento
   Movement nextMovement = gradientDescent(currentCell, matrix);
-  printf("current: [%d][%d], nextRow: %d, nextColumn: %d\n", 
-      currentCell.row, currentCell.column,
-      nextMovement.cell.row, nextMovement.cell.column);
       
+  cellSpeed = nextMovement.speed;
   // Loop principal
   while (wb_robot_step(TIME_STEP) != -1) {      
     double x, z;
@@ -254,21 +305,24 @@ int main(int argc, char **argv) {
     x = values[0];
     z = values[2];
     
+    // Condicao de parada do robo (chegou ao objetivo)
     if (equal(x, goal.x) && equal(z, goal.z)) {
       for (int i = 0; i < 4; i++)
         wb_motor_set_velocity(motors[i], 0);
       continue;
     }
     
+    // Vefica se o robo esta na posicao correta
     if (equal(x, toCoordinate(nextMovement.cell.column)) &&
         equal(z, toCoordinate(nextMovement.cell.row))) {
+      // Se estiver, atualiza as informacoes da celula atual
       currentCell = nextMovement.cell;
+      // E define o proximo movimento
       nextMovement = gradientDescent(currentCell, matrix);
-      printf("current: [%d][%d], nextRow: %d, nextColumn: %d\n", 
-      currentCell.row, currentCell.column,
-      nextMovement.cell.row, nextMovement.cell.column);
+      cellSpeed = nextMovement.speed;
     }
     else {
+      // Caso nao esteja na posicao esperada, se movimenta ate ela
       nextMovement.function();
     }
   };
